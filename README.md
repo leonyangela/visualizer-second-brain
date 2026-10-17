@@ -25,6 +25,23 @@ Put a model at `public/models/brain.glb`. Without one, a procedural stand-in bra
 
 If the model faces the wrong way, change `MODEL_ROTATION` in `src/components/scene/brain-geometry.ts`.
 
+### Preparing the CGTrader brain model
+
+The source OBJ also has the cerebellum, brain stem, and inner structures that show through the see-through particle cloud as solid shapes. `scripts/clean-model.mjs` keeps only the cerebrum (the two hemispheres):
+
+```bash
+node scripts/inspect-obj.mjs public/models/Brain_Model.obj          # list the mesh's connected pieces
+node scripts/clean-model.mjs public/models/Brain_Model.obj public/models/brain-clean.obj
+cd public/models
+npx obj2gltf@3 -i brain-clean.obj -o brain-raw.glb
+npx @gltf-transform/cli@4 meshopt brain-raw.glb brain.glb
+rm brain-raw.glb brain-clean.obj
+```
+
+## Keyboard
+
+- `H`: hide or show the HUD panels to see the whole brain
+
 ## How it works
 
 - `src/lib/vault/read-vault.ts` reads `wiki/**` and `projects/**` (frontmatter, titles, wikilinks, summaries from `wiki/index.md`), plus `raw/` file names, `wiki/log.md`, the learning tracker, ideas, and toolbox categories. Runs on the server at request time.

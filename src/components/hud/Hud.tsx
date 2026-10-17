@@ -61,8 +61,21 @@ type HudProps = {
   onToggleGroup: (group: NodeGroup) => void;
 };
 
+function usePanelsToggle() {
+  const [collapsed, setCollapsed] = useState(false);
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key.toLowerCase() === "h" && !e.metaKey && !e.ctrlKey && !e.altKey) setCollapsed((c) => !c);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+  return [collapsed, () => setCollapsed((c) => !c)] as const;
+}
+
 export function Hud({ data, hoveredNode, hidden, onToggleGroup }: HudProps) {
   const time = useBrisbaneClock();
+  const [collapsed, togglePanels] = usePanelsToggle();
   const latestIn = data.log.find((l) => l.op === "ingest");
   const latestOut = data.log.find((l) => ["query", "content", "learn"].includes(l.op));
   const groupCounts = GROUP_ORDER.map((g) => [g, data.nodes.filter((n) => n.group === g).length] as const).filter(
@@ -87,7 +100,7 @@ export function Hud({ data, hoveredNode, hidden, onToggleGroup }: HudProps) {
         </div>
       </header>
 
-      <div className="hud-top">
+      <div className={`hud-top ${collapsed ? "hud-collapsed" : ""}`}>
         <section className="hud-panel hud-card-active">
           <h2 className="hud-card-title">SOURCE / incoming</h2>
           <p className="truncate text-white">{latestIn?.title ?? "nothing yet"}</p>
@@ -116,64 +129,69 @@ export function Hud({ data, hoveredNode, hidden, onToggleGroup }: HudProps) {
         </div>
       )}
 
-      <div className="hud-grid">
-        <Card title="INDEX / pages" active seed={1}>
-          <div className="flex flex-wrap gap-x-3 gap-y-1">
-            {groupCounts.map(([g, c]) => (
-              <button
-                key={g}
-                type="button"
-                onClick={() => onToggleGroup(g)}
-                className={`flex items-center gap-1 ${hidden.has(g) ? "opacity-30" : ""}`}
-                title={hidden.has(g) ? "show" : "hide"}
-              >
-                <span className="hud-dot" style={{ background: GROUP_COLOR[g] }} />
-                {g} <span className="hud-dim">{c}</span>
-              </button>
+      <div className="hud-bottom">
+        <button type="button" className="hud-toggle" onClick={togglePanels} aria-expanded={!collapsed}>
+          {collapsed ? "[+] show panels" : "[-] hide panels"} <span className="hud-dim">/ H</span>
+        </button>
+        <div className={`hud-grid ${collapsed ? "hud-collapsed" : ""}`}>
+          <Card title="INDEX / pages" active seed={1}>
+            <div className="flex flex-wrap gap-x-3 gap-y-1">
+              {groupCounts.map(([g, c]) => (
+                <button
+                  key={g}
+                  type="button"
+                  onClick={() => onToggleGroup(g)}
+                  className={`flex items-center gap-1 ${hidden.has(g) ? "opacity-30" : ""}`}
+                  title={hidden.has(g) ? "show" : "hide"}
+                >
+                  <span className="hud-dot" style={{ background: GROUP_COLOR[g] }} />
+                  {g} <span className="hud-dim">{c}</span>
+                </button>
+              ))}
+            </div>
+          </Card>
+          <Card title="LINKS / graph" seed={2}>
+            <Row left="connections" right={data.edges.length} />
+            {hubs.map((n) => (
+              <Row key={n.id} left={n.title} right={n.degree} />
             ))}
-          </div>
-        </Card>
-        <Card title="LINKS / graph" seed={2}>
-          <Row left="connections" right={data.edges.length} />
-          {hubs.map((n) => (
-            <Row key={n.id} left={n.title} right={n.degree} />
-          ))}
-        </Card>
-        <Card title="RAW / loot" seed={3}>
-          <Row left="files in the chest" right={data.raw.count} />
-          {data.raw.recent.slice(0, 3).map((r) => (
-            <Row key={r.path} left={r.name} />
-          ))}
-        </Card>
-        <Card title="LOG / tail" active seed={4}>
-          {data.log.slice(0, 4).map((l, i) => (
-            <Row key={i} left={l.title} right={l.op} />
-          ))}
-        </Card>
-        <Card title="LEARNING" seed={5}>
-          {data.learning.slice(0, 4).map((l) => (
-            <Row key={l.area} left={l.area} right={l.status} />
-          ))}
-        </Card>
-        <Card title="TOOLBOX" seed={6}>
-          {Object.entries(data.toolbox)
-            .sort((a, b) => b[1] - a[1])
-            .slice(0, 4)
-            .map(([k, v]) => (
-              <Row key={k} left={k} right={v} />
+          </Card>
+          <Card title="RAW / loot" seed={3}>
+            <Row left="files in the chest" right={data.raw.count} />
+            {data.raw.recent.slice(0, 3).map((r) => (
+              <Row key={r.path} left={r.name} />
             ))}
-        </Card>
-        <Card title="CONTENT" seed={7}>
-          {Object.entries(data.ideas).map(([k, v]) => (
-            <Row key={k} left={`ideas / ${k}`} right={v} />
-          ))}
-          <Row left="drafts" right={data.drafts} />
-        </Card>
-        <Card title="PROJECTS" active seed={8}>
-          {data.projects.map((p) => (
-            <Row key={p.name} left={p.name} right={p.status.toLowerCase()} />
-          ))}
-        </Card>
+          </Card>
+          <Card title="LOG / tail" active seed={4}>
+            {data.log.slice(0, 4).map((l, i) => (
+              <Row key={i} left={l.title} right={l.op} />
+            ))}
+          </Card>
+          <Card title="LEARNING" seed={5}>
+            {data.learning.slice(0, 4).map((l) => (
+              <Row key={l.area} left={l.area} right={l.status} />
+            ))}
+          </Card>
+          <Card title="TOOLBOX" seed={6}>
+            {Object.entries(data.toolbox)
+              .sort((a, b) => b[1] - a[1])
+              .slice(0, 4)
+              .map(([k, v]) => (
+                <Row key={k} left={k} right={v} />
+              ))}
+          </Card>
+          <Card title="CONTENT" seed={7}>
+            {Object.entries(data.ideas).map(([k, v]) => (
+              <Row key={k} left={`ideas / ${k}`} right={v} />
+            ))}
+            <Row left="drafts" right={data.drafts} />
+          </Card>
+          <Card title="PROJECTS" active seed={8}>
+            {data.projects.map((p) => (
+              <Row key={p.name} left={p.name} right={p.status.toLowerCase()} />
+            ))}
+          </Card>
+        </div>
       </div>
 
       <footer className="hud-footer">

@@ -71,25 +71,51 @@ export function proceduralBrainPoints(count: number) {
   return normalise(out);
 }
 
-// Sample a loaded model's surfaces, weighted by triangle count.
+function surfaceArea(geometry: THREE.BufferGeometry) {
+  const pos = geometry.attributes.position;
+  const index = geometry.index;
+  const tri = new THREE.Triangle();
+  let area = 0;
+  const count = index ? index.count : pos.count;
+  for (let i = 0; i < count; i += 3) {
+    const [a, b, c] = index ? [index.getX(i), index.getX(i + 1), index.getX(i + 2)] : [i, i + 1, i + 2];
+    tri.a.fromBufferAttribute(pos, a);
+    tri.b.fromBufferAttribute(pos, b);
+    tri.c.fromBufferAttribute(pos, c);
+    area += tri.getArea();
+  }
+  return area;
+}
+
+// Compressed (meshopt) models store positions as quantized integers. Transforming those in
+// place clamps and rounds them, so copy positions to floats first.
+function toFloatPositions(source: THREE.BufferGeometry) {
+  const pos = source.attributes.position;
+  const floats = new Float32Array(pos.count * 3);
+  for (let i = 0; i < pos.count; i++) floats.set([pos.getX(i), pos.getY(i), pos.getZ(i)], i * 3);
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute("position", new THREE.BufferAttribute(floats, 3));
+  if (source.index) geometry.setIndex(source.index.clone());
+  return geometry;
+}
+
+// Sample a loaded model's surfaces evenly: each mesh gets points in proportion to its area,
+// so a finely tessellated part (like the cerebellum) doesn't hog the particles.
 export function sampleModelPoints(scene: THREE.Object3D, count: number) {
   scene.updateMatrixWorld(true);
   const meshes: THREE.Mesh[] = [];
   scene.traverse((o) => {
     if ((o as THREE.Mesh).isMesh) meshes.push(o as THREE.Mesh);
   });
-  const weights = meshes.map((m) => {
-    const g = m.geometry;
-    return (g.index ? g.index.count : g.attributes.position.count) / 3;
-  });
-  const total = weights.reduce((a, b) => a + b, 0) || 1;
+  const rotation = new THREE.Matrix4().makeRotationFromEuler(MODEL_ROTATION);
+  const geometries = meshes.map((m) => toFloatPositions(m.geometry).applyMatrix4(m.matrixWorld).applyMatrix4(rotation));
+  const areas = geometries.map(surfaceArea);
+  const total = areas.reduce((a, b) => a + b, 0) || 1;
   const out = new Float32Array(count * 3);
   const p = new THREE.Vector3();
-  const rotation = new THREE.Matrix4().makeRotationFromEuler(MODEL_ROTATION);
   let k = 0;
-  meshes.forEach((mesh, mi) => {
-    const n = mi === meshes.length - 1 ? count - k : Math.round((weights[mi] / total) * count);
-    const geometry = mesh.geometry.clone().applyMatrix4(mesh.matrixWorld).applyMatrix4(rotation);
+  geometries.forEach((geometry, gi) => {
+    const n = gi === geometries.length - 1 ? count - k : Math.round((areas[gi] / total) * count);
     const sampler = new MeshSurfaceSampler(new THREE.Mesh(geometry)).build();
     for (let i = 0; i < n && k < count; i++, k++) {
       sampler.sample(p);
@@ -112,7 +138,7 @@ export const REGION_ANCHORS: Record<NodeGroup | "raw", [number, number, number]>
   projects: [0.95, -0.25, 0.95],
   notes: [-0.6, 0.35, -1.0],
   core: [0.0, 0.3, 0.0],
-  raw: [0.45, -1.25, 0.0],
+  raw: [0.2, -1.2, 0.0], // underside of the brain, where sources enter
 };
 
 // Pick a spot for each node: the brain points nearest its region anchor, spread out.

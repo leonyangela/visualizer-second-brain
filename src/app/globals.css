@@ -22,6 +22,7 @@ body {
 .hud {
   position: absolute;
   inset: 0;
+  z-index: 30; /* above the 3D region tags */
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -58,6 +59,51 @@ body {
   border-radius: 6px;
   padding: 10px 12px;
   backdrop-filter: blur(4px);
+}
+
+.hud-bottom {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.hud-toggle {
+  align-self: flex-end;
+  color: var(--accent);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 3px 10px;
+  font-size: 11px;
+  cursor: pointer;
+}
+.hud-toggle:hover {
+  border-color: var(--accent);
+}
+
+/* Collapsed panels slide away so the whole brain is visible. */
+.hud-top,
+.hud-grid {
+  transition:
+    opacity 0.3s ease,
+    transform 0.3s ease;
+}
+.hud-collapsed {
+  opacity: 0;
+  pointer-events: none;
+}
+.hud-top.hud-collapsed {
+  transform: translateY(-12px);
+}
+.hud-grid.hud-collapsed {
+  transform: translateY(16px);
+  height: 0;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+}
+.hud-collapsed .hud-card {
+  pointer-events: none;
 }
 
 .hud-grid {

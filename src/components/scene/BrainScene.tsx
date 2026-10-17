@@ -9,9 +9,8 @@ import { GROUP_LABEL } from "@/lib/vault/types";
 import { BrainCloud } from "./BrainCloud";
 import { LinkArcs } from "./LinkArcs";
 import { NodeField } from "./NodeField";
-import { FileStream } from "./FileStream";
 import { REGION_ANCHORS, layoutNodes, proceduralBrainPoints, sampleModelPoints } from "./brain-geometry";
-import { ACCENT, GROUP_COLOR } from "./theme";
+import { GROUP_COLOR } from "./theme";
 
 const POINT_COUNT = 70000;
 
@@ -20,7 +19,6 @@ export type SceneProps = {
   edges: BrainEdge[];
   modelUrl: string | null;
   rawCount: number;
-  outCount: number;
   hovered: number | null;
   hidden: Set<string>;
   onHover: (index: number | null) => void;
@@ -28,7 +26,7 @@ export type SceneProps = {
 };
 
 function Brain({ points, ...props }: SceneProps & { points: Float32Array }) {
-  const { nodes, edges, hovered, hidden, rawCount, outCount, onHover, onSelect } = props;
+  const { nodes, edges, hovered, hidden, rawCount, onHover, onSelect } = props;
   const positions = useMemo(() => layoutNodes(points, nodes.map((n) => n.group)), [points, nodes]);
   const counts = useMemo(() => {
     const c = new Map<NodeGroup, number>();
@@ -36,7 +34,6 @@ function Brain({ points, ...props }: SceneProps & { points: Float32Array }) {
     return c;
   }, [nodes]);
   const raw = REGION_ANCHORS.raw;
-  const out = REGION_ANCHORS.outputs;
 
   return (
     <group>
@@ -49,17 +46,6 @@ function Brain({ points, ...props }: SceneProps & { points: Float32Array }) {
         hidden={hidden}
         onHover={onHover}
         onSelect={onSelect}
-      />
-      <FileStream
-        path={[[-3.6, -1.9, 1.8], [-1.6, -2.1, 1.2], [-0.2, -1.8, 0.5], raw]}
-        count={Math.min(Math.max(rawCount, 4), 12)}
-        color="#d8f5e6"
-      />
-      <FileStream
-        path={[out, [-2.2, -0.9, -0.2], [-1.2, -2.1, 0.8], [1.8, -2.2, 1.6], [3.8, -1.7, 1.6]]}
-        count={Math.min(Math.max(outCount, 3), 8)}
-        color={ACCENT}
-        speed={0.025}
       />
       {[...counts.entries()].map(([group, count]) => (
         <RegionTag key={group} position={REGION_ANCHORS[group]} label={GROUP_LABEL[group]} count={count} color={GROUP_COLOR[group]} />
