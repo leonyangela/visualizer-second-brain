@@ -1,26 +1,171 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg: #040806;
+  --panel: rgba(8, 16, 12, 0.78);
+  --line: #1c3328;
+  --accent: #3cffa0;
+  --text: #cfe9da;
+  --dim: #6b8a78;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --font-mono: var(--font-mono);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-mono), ui-monospace, monospace;
+}
+
+.hud {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 16px 20px;
+  pointer-events: none;
+  font-size: 12px;
+}
+.hud button,
+.hud-card {
+  pointer-events: auto;
+}
+
+.hud-header {
+  display: flex;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 10px;
+}
+
+.hud-top {
+  position: absolute;
+  top: 92px;
+  left: 20px;
+  right: 20px;
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.hud-panel {
+  width: min(260px, 42vw);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 10px 12px;
+  backdrop-filter: blur(4px);
+}
+
+.hud-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+}
+@media (min-width: 1024px) {
+  .hud-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.hud-card {
+  position: relative;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 8px 12px 6px;
+  min-height: 108px;
+  backdrop-filter: blur(4px);
+  overflow: hidden;
+}
+.hud-card-active {
+  border-color: color-mix(in srgb, var(--accent) 70%, transparent);
+  box-shadow: 0 0 18px -8px var(--accent);
+}
+.hud-card-title {
+  color: var(--accent);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  margin-bottom: 6px;
+}
+.hud-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  line-height: 1.5;
+}
+
+.hud-tooltip {
+  position: absolute;
+  top: 180px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(380px, 90vw);
+  background: var(--panel);
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  padding: 10px 12px;
+  box-shadow: 0 0 24px -10px var(--accent);
+}
+
+.hud-footer {
+  display: flex;
+  justify-content: space-between;
+  color: var(--dim);
+  font-size: 10px;
+  padding-top: 8px;
+}
+
+.hud-dim {
+  color: var(--dim);
+}
+.hud-accent {
+  color: var(--accent);
+}
+.hud-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+}
+
+.region-tag {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 11px;
+  white-space: nowrap;
+  padding: 2px 7px;
+  border: 1px solid;
+  border-radius: 3px;
+  background: rgba(4, 10, 7, 0.75);
+}
+
+.sparkline {
+  display: block;
+  width: 200%;
+  height: 14px;
+  margin-top: 6px;
+  animation: spark 6s linear infinite;
+}
+.sparkline polyline {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1;
+  opacity: 0.55;
+  vector-effect: non-scaling-stroke;
+}
+@keyframes spark {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@media (max-width: 640px) {
+  .hud-top {
+    display: none;
+  }
 }

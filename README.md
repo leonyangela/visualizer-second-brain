@@ -1,36 +1,36 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Brain 3D
 
-## Getting Started
+A futuristic 3D brain that visualizes an Obsidian vault built with the LLM Wiki pattern. Wiki pages become glowing nodes in brain regions, `[[wikilinks]]` become arcs with travelling pulses, raw sources flow in and outputs flow out, and a terminal-style HUD shows live stats from the vault.
 
-First, run the development server:
+The app reads the vault **read-only**. It never writes to it.
+
+## Run it
 
 ```bash
+cp .env.example .env.local   # then set VAULT_PATH to your vault
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open http://localhost:3000. Refresh to pick up new pages.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- Hover a node: title, summary, link count
+- Click a node: opens the page in Obsidian
+- Click a group in the INDEX card: hide or show it
+- Drag to orbit, scroll to zoom
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Brain model
 
-## Learn More
+Put a model at `public/models/brain.glb`. Without one, a procedural stand-in brain is used. Model files are git-ignored so licensed assets are never committed.
 
-To learn more about Next.js, take a look at the following resources:
+If the model faces the wrong way, change `MODEL_ROTATION` in `src/components/scene/brain-geometry.ts`.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## How it works
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- `src/lib/vault/read-vault.ts` reads `wiki/**` and `projects/**` (frontmatter, titles, wikilinks, summaries from `wiki/index.md`), plus `raw/` file names, `wiki/log.md`, the learning tracker, ideas, and toolbox categories. Runs on the server at request time.
+- `src/components/scene/` is the React Three Fiber scene: point-cloud brain (`BrainCloud`), nodes (`NodeField`), link arcs (`LinkArcs`), file streams (`FileStream`), bloom.
+- `src/components/hud/Hud.tsx` is the overlay.
 
-## Deploy on Vercel
+## Stack
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Next.js 16 (App Router, Cache Components), TypeScript, React Three Fiber, drei, postprocessing, Tailwind CSS, gray-matter.
